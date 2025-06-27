@@ -4,6 +4,7 @@
   let isLoading = false;
 
   type Professor = {
+    id:number;
     nome: string;
     cognome: string;
     materia: string;
@@ -13,16 +14,16 @@
 
   // Simulated DB
   let mockDBProfessors: Professor[] = [
-    { nome: "Giulia", cognome: "Ferrari", materia: "Matematica" },
-    { nome: "Marco", cognome: "Esposito", materia: "Fisica" },
-    { nome: "Sara", cognome: "Russo", materia: "Italiano" }
+    { id:1, nome: "Giulia", cognome: "Ferrari", materia: "Matematica" },
+    { id:2, nome: "Marco", cognome: "Esposito", materia: "Fisica" },
+    { id:3, nome: "Sara", cognome: "Russo", materia: "Italiano" }
   ];
 
   // Form fields
   let nome = '';
   let cognome = '';
   let materia = '';
-  let editingIndex = -1;
+  let editingId: number | null = null; // track editing by id
 
   // Simulated API calls
   function getProfessorsFromDB(): Promise<Professor[]> {
@@ -31,23 +32,30 @@
     });
   }
 
-  function saveProfessorToDB(prof: Professor, index: number): Promise<void> {
+  function saveProfessorToDB(prof: Professor): Promise<void> {
     return new Promise(resolve => {
       setTimeout(() => {
-        if (index === -1) {
+        if (prof.id === 0) {
+          // Add new professor - id = length + 1
+          const newId = mockDBProfessors.length > 0 
+          ? Math.max(...mockDBProfessors.map(p => p.id)) + 1 
+          : 1;
+          prof.id = newId
           mockDBProfessors.push(prof);
         } else {
-          mockDBProfessors[index] = prof;
+          // Update existing professor by id
+          const idx = mockDBProfessors.findIndex(p => p.id === prof.id);
+          if (idx !== -1) mockDBProfessors[idx] = prof;
         }
         resolve();
       }, 300);
     });
   }
 
-  function deleteProfessorFromDB(index: number): Promise<void> {
+  function deleteProfessorFromDB(id: number): Promise<void> {
     return new Promise(resolve => {
       setTimeout(() => {
-        mockDBProfessors.splice(index, 1);
+        mockDBProfessors = mockDBProfessors.filter(s => s.id !== id);
         resolve();
       }, 300);
     });
@@ -68,11 +76,17 @@
       return;
     }
 
-    const newProfessor: Professor = { nome, cognome, materia };
+    const professor: Professor = 
+    { 
+      id: editingId ?? 0,  // 0 means new prof
+      nome, 
+      cognome, 
+      materia 
+    };
 
     isLoading = true;
     try{
-        await saveProfessorToDB(newProfessor, editingIndex);
+        await saveProfessorToDB(professor);
         await fetchProfessors();
         resetForm();
       }finally{
@@ -81,14 +95,14 @@
     
   }
 
-  async function deleteProfessor(index: number): Promise<void> {
+  async function deleteProfessor(id: number): Promise<void> {
     if (confirm("Vuoi davvero eliminare questo professore?")) {
 
       isLoading = true;
       try{
-          await deleteProfessorFromDB(index);
+          await deleteProfessorFromDB(id);
           await fetchProfessors();
-          if (editingIndex === index) resetForm();
+          if (editingId === id) resetForm();
         }finally{
           isLoading = false;
         }
@@ -96,19 +110,20 @@
     }
   }
 
-  function editProfessor(index: number): void {
-    const prof = professors[index];
+  function editProfessor(id: number): void {
+    const prof = professors.find(p => p.id === id);
+    if (!prof) return;
     nome = prof.nome;
     cognome = prof.cognome;
     materia = prof.materia;
-    editingIndex = index;
+    editingId = prof.id;
   }
 
   function resetForm(): void {
     nome = '';
     cognome = '';
     materia = '';
-    editingIndex = -1;
+    editingId = null;
   }
 
   function goBack(): void {
@@ -154,6 +169,7 @@
         <th class="px-4 py-3 border-b text-left">Nome</th>
         <th class="px-4 py-3 border-b text-left">Cognome</th>
         <th class="px-4 py-3 border-b text-left">Materia</th>
+        <th class="px-4 py-3 border-b text-left">Id</th>
         <th class="px-4 py-3 border-b text-left">Azioni</th>
       </tr>
     </thead>
@@ -163,13 +179,14 @@
           <td class="px-4 py-2 border-b">{professor.nome}</td>
           <td class="px-4 py-2 border-b">{professor.cognome}</td>
           <td class="px-4 py-2 border-b">{professor.materia}</td>
+          <td class="px-4 py-2 border-b">{professor.id}</td>
           <td class="px-4 py-2 border-b space-x-2">
-            <button class="text-sm text-blue-600 hover:underline" on:click={() => editProfessor(index)} disabled={isLoading}>
+            <button class="text-sm text-blue-600 hover:underline" on:click={() => editProfessor(professor.id)} disabled={isLoading}>
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536M16.5 3.75a2.121 2.121 0 013 3L7 19.25H4.5v-2.5L16.5 3.75z" />
                 </svg>
             </button>
-            <button class="text-sm text-red-600 hover:underline" on:click={() => deleteProfessor(index)} disabled={isLoading}>
+            <button class="text-sm text-red-600 hover:underline" on:click={() => deleteProfessor(professor.id)} disabled={isLoading}>
               <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5-4h4a1 1 0 011 1v1H9V4a1 1 0 011-1z" />
               </svg>
@@ -184,7 +201,7 @@
 <!-- Form -->
   <div class="bg-white rounded-xl shadow-md p-6 max-w-2xl mx-auto border border-gray-200">
     <h2 class="text-lg font-semibold text-gray-800 mb-4 text-center">
-      {editingIndex === -1 ? "Aggiungi Nuovo Professore" : "Modifica Professore"}
+      {editingId === null ? "Aggiungi Nuovo Professore" : "Modifica Professore"}
     </h2>
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
       <input type="text" bind:value={nome} placeholder="Nome" class="border p-2 rounded w-full" />
@@ -197,9 +214,9 @@
         class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition"
         disabled={isLoading}
       >
-        {editingIndex === -1 ? "Aggiungi" : "Aggiorna"}
+        {editingId === null ? "Aggiungi" : "Aggiorna"}
       </button>
-      {#if editingIndex !== -1}
+      {#if editingId !== null}
         <button
           on:click={resetForm}
           class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition"

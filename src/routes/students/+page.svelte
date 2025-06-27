@@ -5,6 +5,7 @@
   let isLoading = false;
 
   type Student = {
+    id:number
     nome: string;
     cognome: string;
     eta: number;
@@ -18,13 +19,13 @@
   let cognome = '';
   let eta = '';
   let classe = '';
-  let editingIndex = -1;
+  let editingId: number | null = null; // track editing by id
 
   // Simulate DB
   let mockDB: Student[] = [
-    { nome: "Luca", cognome: "Rossi", eta: 8, classe: "3A" },
-    { nome: "Maria", cognome: "Bianchi", eta: 9, classe: "4B" },
-    { nome: "Giovanni", cognome: "Verdi", eta: 7, classe: "2C" }
+    { id:1, nome: "Luca", cognome: "Rossi", eta: 8, classe: "3A" },
+    { id:2, nome: "Maria", cognome: "Bianchi", eta: 9, classe: "4B" },
+    { id:3, nome: "Giovanni", cognome: "Verdi", eta: 7, classe: "2C" }
   ];
 
   // Simulate API: fetch
@@ -37,13 +38,22 @@
   }
 
   // Simulate API: add or update
-  function saveStudentToDB(student: Student, index: number): Promise<void> {
+function saveStudentToDB(student: Student): Promise<void> {
     return new Promise(resolve => {
       setTimeout(() => {
-        if (index === -1) {
+        if (student.id === 0) {
+          // Add new student: assign new id
+          const newId = mockDB.length > 0 
+          ? Math.max(...mockDB.map(p => p.id)) + 1 
+          : 1;
+          student.id = newId;
           mockDB.push(student);
         } else {
-          mockDB[index] = student;
+          // Update existing student by id
+          const index = mockDB.findIndex(s => s.id === student.id);
+          if (index !== -1) {
+            mockDB[index] = student;
+          }
         }
         resolve();
       }, 300);
@@ -51,10 +61,10 @@
   }
 
   // Simulate API: delete
-  function deleteStudentFromDB(index: number): Promise<void> {
+  function deleteStudentFromDB(id: number): Promise<void> {
     return new Promise(resolve => {
       setTimeout(() => {
-        mockDB.splice(index, 1);
+        mockDB = mockDB.filter(s => s.id !== id);
         resolve();
       }, 300);
     });
@@ -67,7 +77,8 @@
       return;
     }
 
-    const newStudent: Student = {
+    const student: Student = {
+      id: editingId ?? 0,  // 0 means new student
       nome,
       cognome,
       eta: parseInt(eta),
@@ -76,7 +87,7 @@
 
     isLoading = true;
     try {
-      await saveStudentToDB(newStudent, editingIndex);
+      await saveStudentToDB(student);
       await fetchStudents();
       resetForm();
     } finally {
@@ -84,34 +95,39 @@
     }
   }
 
-  async function deleteStudent(index: number): Promise<void> {
+ 
+
+  async function deleteStudent(id: number): Promise<void> {
     if (confirm("Sei sicuro di voler eliminare questo studente?")) {
-         isLoading = true;
-    try {
-        await deleteStudentFromDB(index);
+      isLoading = true;
+      try {
+        await deleteStudentFromDB(id);
         await fetchStudents();
-        if (editingIndex === index) resetForm();
+        if (editingId === id) resetForm();
       } finally {
         isLoading = false;
       }
     }
   }
 
-  function editStudent(index: number): void {
-    const student = students[index];
+  function editStudent(id: number): void {
+    const student = students.find(s => s.id === id);
+    if (!student) return;
+
     nome = student.nome;
     cognome = student.cognome;
     eta = student.eta.toString();
     classe = student.classe;
-    editingIndex = index;
+    editingId = student.id;
   }
 
-  function resetForm(): void {
+  function resetForm(): void 
+  {
     nome = "";
     cognome = "";
     eta = "";
     classe = "";
-    editingIndex = -1;
+    editingId = null;
   }
 
   async function fetchStudents(): Promise<void> {
@@ -168,6 +184,7 @@
         <th class="px-4 py-3 border-b text-left">Cognome</th>
         <th class="px-4 py-3 border-b text-left">Età</th>
         <th class="px-4 py-3 border-b text-left">Classe</th>
+        <th class="px-4 py-3 border-b text-left">Id</th>
         <th class="px-4 py-3 border-b text-left">Azioni</th>
       </tr>
     </thead>
@@ -178,13 +195,14 @@
           <td class="px-4 py-2 border-b">{student.cognome}</td>
           <td class="px-4 py-2 border-b">{student.eta}</td>
           <td class="px-4 py-2 border-b">{student.classe}</td>
+          <td class="px-4 py-2 border-b">{student.id}</td>
           <td class="px-4 py-2 border-b space-x-2">
-            <button class="text-sm text-blue-600 hover:underline" on:click={() => editStudent(index)} disabled={isLoading}>
+            <button class="text-sm text-blue-600 hover:underline" on:click={() => editStudent(student.id)} disabled={isLoading}>
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536M16.5 3.75a2.121 2.121 0 013 3L7 19.25H4.5v-2.5L16.5 3.75z" />
               </svg>
             </button>
-            <button class="text-sm text-red-600 hover:underline" on:click={() => deleteStudent(index)} disabled={isLoading}>
+            <button class="text-sm text-red-600 hover:underline" on:click={() => deleteStudent(student.id)} disabled={isLoading}>
               <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5-4h4a1 1 0 011 1v1H9V4a1 1 0 011-1z" />
               </svg>
@@ -199,7 +217,7 @@
   <!-- Form -->
   <div class="bg-white rounded-xl shadow-md p-6 max-w-2xl mx-auto border border-gray-200">
     <h2 class="text-lg font-semibold text-gray-800 mb-4 text-center">
-      {editingIndex === -1 ? "Aggiungi Nuovo Studente" : "Modifica Studente"}
+      {editingId === null ? "Aggiungi Nuovo Studente" : "Modifica Studente"}
     </h2>
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
       <input type="text" bind:value={nome} placeholder="Nome" class="border p-2 rounded w-full" />
@@ -213,9 +231,9 @@
         class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition"
         disabled={isLoading}
       >
-        {editingIndex === -1 ? "Aggiungi" : "Aggiorna"}
+        {editingId === null ? "Aggiungi" : "Aggiorna"}
       </button>
-      {#if editingIndex !== -1}
+      {#if editingId !== null}
         <button
           on:click={resetForm}
           class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition"
