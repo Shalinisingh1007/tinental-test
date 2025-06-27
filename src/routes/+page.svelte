@@ -1,6 +1,6 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
-  import '../app.css'; 
+ 
 
   function viewStudents(): void {
     goto('/students');
