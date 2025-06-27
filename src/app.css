@@ -1,0 +1,7 @@
+@import "tailwindcss";
+
+:global(html) {
+  background-color: #f3f4f6;
+  height: 80%;
+  margin: 0;
+}
