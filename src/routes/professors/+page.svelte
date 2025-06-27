@@ -169,7 +169,6 @@
         <th class="px-4 py-3 border-b text-left">Nome</th>
         <th class="px-4 py-3 border-b text-left">Cognome</th>
         <th class="px-4 py-3 border-b text-left">Materia</th>
-        <th class="px-4 py-3 border-b text-left">Id</th>
         <th class="px-4 py-3 border-b text-left">Azioni</th>
       </tr>
     </thead>
@@ -179,7 +178,6 @@
           <td class="px-4 py-2 border-b">{professor.nome}</td>
           <td class="px-4 py-2 border-b">{professor.cognome}</td>
           <td class="px-4 py-2 border-b">{professor.materia}</td>
-          <td class="px-4 py-2 border-b">{professor.id}</td>
           <td class="px-4 py-2 border-b space-x-2">
             <button class="text-sm text-blue-600 hover:underline" on:click={() => editProfessor(professor.id)} disabled={isLoading}>
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">

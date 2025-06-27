@@ -184,7 +184,6 @@ function saveStudentToDB(student: Student): Promise<void> {
         <th class="px-4 py-3 border-b text-left">Cognome</th>
         <th class="px-4 py-3 border-b text-left">Età</th>
         <th class="px-4 py-3 border-b text-left">Classe</th>
-        <th class="px-4 py-3 border-b text-left">Id</th>
         <th class="px-4 py-3 border-b text-left">Azioni</th>
       </tr>
     </thead>
@@ -195,7 +194,6 @@ function saveStudentToDB(student: Student): Promise<void> {
           <td class="px-4 py-2 border-b">{student.cognome}</td>
           <td class="px-4 py-2 border-b">{student.eta}</td>
           <td class="px-4 py-2 border-b">{student.classe}</td>
-          <td class="px-4 py-2 border-b">{student.id}</td>
           <td class="px-4 py-2 border-b space-x-2">
             <button class="text-sm text-blue-600 hover:underline" on:click={() => editStudent(student.id)} disabled={isLoading}>
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
